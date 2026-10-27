@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Invernadero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fondo: #e9f0ec;
+    --papel: #fbfdfb;
+    --tinta: #12332e;
+    --tinta-suave: #4b6b64;
+    --hoja: #2f7d4f;
+    --hoja-clara: #d5ebdc;
+    --agua: #2a78b5;
+    --sol: #c98a00;
+    --alerta: #b45f16;
+    --alerta-clara: #fbe8d2;
+    --error: #a33a3a;
+    --linea: #cfdcd5;
+    --campo: #fff; --neutro: #e9eeeb; --ok-texto: #1c5a37; --warn-texto: #7a3f0c;
+    --activo-bg: #fdf0c8; --activo-texto: #6d4a00; --error-bg: #f3dcdc; --principal: #12332e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--fondo);
+    color: var(--tinta);
+    line-height: 1.5;
+  }
+  .pagina { position: relative; max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1, h2, h3 { margin: 0; line-height: 1.2; }
+  h2 { font-size: 1.35rem; font-weight: 800; margin-bottom: 4px; }
+  h3 { font-size: 1.05rem; font-weight: 800; }
+  .sub { color: var(--tinta-suave); margin: 0 0 14px; }
+
+  /* Encabezado */
+  header { padding-right: 54px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.01em; }
+  .estado-conexion {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 999px; font-weight: 800;
+    background: var(--hoja-clara); color: var(--ok-texto);
+  }
+  .estado-conexion .punto { width: 10px; height: 10px; border-radius: 50%; background: var(--hoja); }
+  .estado-conexion.off { background: var(--error-bg); color: var(--error); }
+  .estado-conexion.off .punto { background: var(--error); }
+  .actualizado { font-size: .85rem; color: var(--tinta-suave); width: 100%; margin-top: -6px; }
+  .aviso {
+    display: none; background: var(--alerta-clara); color: var(--warn-texto); border-radius: 12px;
+    padding: 12px 16px; margin-bottom: 16px; font-weight: 600;
+  }
+  .aviso.visible { display: block; }
+
+  /* Lectura principal + tarjetas */
+  .panel-datos { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .tarjeta {
+    background: var(--papel); border: 1px solid var(--linea); border-radius: 14px; padding: 16px 18px;
+  }
+  .tarjeta.principal {
+    grid-row: span 2; background: var(--principal); color: #f2faf5; border-color: var(--principal);
+    border-radius: 22px; display: flex; flex-direction: column; justify-content: space-between; padding: 22px;
+  }
+  .tarjeta .nombre { font-weight: 700; color: var(--tinta-suave); font-size: .95rem; }
+  .tarjeta.principal .nombre { color: #a9cdb9; }
+  .valor { font-size: 2.1rem; font-weight: 800; line-height: 1.1; margin: 6px 0 8px; font-variant-numeric: tabular-nums; }
+  .tarjeta.principal .valor { font-size: 4.6rem; letter-spacing: -0.03em; margin: 10px 0; }
+  .valor small { font-size: 1.1rem; font-weight: 700; margin-left: 2px; }
+  .tarjeta.principal .valor small { font-size: 1.8rem; }
+  .etiqueta {
+    display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: .85rem; font-weight: 700;
+    background: var(--neutro); color: var(--tinta-suave);
+  }
+  .etiqueta.ok { background: var(--hoja-clara); color: var(--ok-texto); }
+  .etiqueta.warn { background: var(--alerta-clara); color: var(--warn-texto); }
+  .tarjeta.principal .etiqueta { background: rgba(255,255,255,.14); color: #f2faf5; }
+  .tarjeta.principal .etiqueta.warn { background: #f3c48d; color: #4d2606; }
+  .detalle { font-size: .88rem; color: var(--tinta-suave); margin-top: 6px; min-height: 1.3em; }
+
+  /* Secciones */
+  section { margin-bottom: 28px; }
+  .caja { background: var(--papel); border: 1px solid var(--linea); border-radius: 18px; padding: 20px; }
+
+  select, input[type="number"] {
+    font: inherit; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--linea);
+    background: var(--campo); color: var(--tinta);
+  }
+  select:focus, input:focus, button:focus-visible {
+    outline: 3px solid rgba(42,120,181,.45); outline-offset: 1px;
+  }
+  .fila-planta { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .fila-planta select { font-size: 1.1rem; font-weight: 700; min-width: 220px; }
+  .desc-planta { margin: 12px 0 0; padding: 12px 14px; background: var(--hoja-clara); border-radius: 12px; color: var(--ok-texto); }
+
+  /* Control manual */
+  .bloques { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .bloque { background: var(--papel); border: 1px solid var(--linea); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .bloque.riego { border-top: 5px solid var(--agua); }
+  .bloque.ventana { border-top: 5px solid var(--hoja); }
+  .bloque.luz { border-top: 5px solid var(--sol); }
+  .fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .fila label { font-weight: 700; font-size: .92rem; }
+  .fila input[type="number"] { width: 90px; }
+  .chip {
+    font: inherit; font-weight: 700; padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    border: 1.5px solid var(--linea); background: var(--campo); color: var(--tinta);
+  }
+  .chip:hover { border-color: var(--agua); }
+  button.btn {
+    font: inherit; font-weight: 800; padding: 11px 18px; border-radius: 12px; border: 0; cursor: pointer;
+    background: var(--hoja); color: #fff;
+  }
+  button.btn:hover { filter: brightness(1.08); }
+  button.btn.agua { background: var(--agua); }
+  button.btn.sol { background: var(--sol); }
+  button.btn.suave { background: var(--neutro); color: var(--tinta); }
+  button.btn.parar { background: var(--error-bg); color: var(--error); }
+  button:disabled, input:disabled, select:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+  .nota { font-size: .85rem; color: var(--tinta-suave); margin: 0; }
+  input[type="range"] { width: 100%; accent-color: var(--sol); }
+  .estado-bloque { font-weight: 700; padding: 8px 12px; border-radius: 10px; background: var(--neutro); font-size: .92rem; }
+  .estado-bloque.activo { background: var(--activo-bg); color: var(--activo-texto); }
+
+  /* Gráfico */
+  .pestanas { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 14px; align-items: center; }
+  .pestana {
+    font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    border: 1.5px solid var(--linea); background: var(--campo); color: var(--tinta);
+  }
+  .pestana[aria-pressed="true"] { background: var(--hoja); color: #fff; border-color: var(--hoja); }
+  .pestanas .limpiar { margin-left: auto; font: inherit; font-size: .88rem; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1.5px solid var(--linea); background: transparent; color: var(--tinta-suave); cursor: pointer; }
+  .lienzo { position: relative; height: 300px; }
+  .vacio { text-align: center; color: var(--tinta-suave); padding: 10px 0 0; font-size: .92rem; }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px);
+    background: var(--principal); color: #fff; border: 1px solid var(--linea); padding: 10px 20px; border-radius: 999px; font-weight: 700;
+    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 10;
+  }
+  #toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .sim-item .fila { margin-top: 6px; flex-wrap: nowrap; }
+  .formplanta[hidden] { display: none; }
+  .formplanta { margin-top: 14px; padding: 16px; border: 1.5px dashed var(--linea); border-radius: 14px; }
+  .pf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 12px 0; }
+  .pf-grid label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .9rem; }
+  .pf-grid .ancho { grid-column: 1 / -1; }
+  .pf-grid input { width: 100%; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--linea); background: var(--campo); color: var(--tinta); }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --fondo: #121a16; --papel: #1a241f; --tinta: #e8f1ea; --tinta-suave: #93a89b;
+    --hoja: #2f9a5a; --hoja-clara: #1f3a2b; --agua: #3b8fd0; --sol: #c98a00;
+    --alerta: #e0a25a; --alerta-clara: #3d2d17; --error: #e88080; --linea: #2a372f;
+    --campo: #222e27; --neutro: #26332c; --ok-texto: #8fe0ae; --warn-texto: #f0c48a;
+    --activo-bg: #3a3014; --activo-texto: #f0d27a; --error-bg: #3d2323; --principal: #0c130f;
+  }
+  .tema { position: absolute; top: 20px; right: 16px; width: 42px; height: 42px; padding: 0; font-size: 1.15rem; line-height: 1;
+    border-radius: 50%; cursor: pointer; border: 1.5px solid var(--linea); background: var(--papel); color: var(--tinta); }
+  .cab-tabla { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .tabla-scroll { overflow: auto; max-height: 340px; }
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  th { text-align: left; color: var(--tinta-suave); font-weight: 600; padding: 10px 8px; border-bottom: 1px solid var(--linea); position: sticky; top: 0; background: var(--papel); }
+  td { padding: 11px 8px; border-bottom: 1px solid var(--linea); vertical-align: top; }
+  .vacio-t { text-align: center; color: var(--tinta-suave); padding: 18px; }
+  .tipo { padding: 2px 12px; border-radius: 999px; font-weight: 700; font-size: .82rem; background: var(--neutro); }
+  .tipo.info { background: var(--hoja-clara); color: var(--ok-texto); }
+  .tipo.alerta { background: var(--alerta-clara); color: var(--warn-texto); }
+  .tipo.critico { background: var(--error-bg); color: var(--error); }
+  .borrar { font: inherit; font-size: .88rem; font-weight: 700; padding: 6px 12px; border-radius: 10px; border: 1.5px solid var(--linea); background: transparent; color: var(--tinta-suave); cursor: pointer; }
+
+  @media (max-width: 760px) {
+    .panel-datos { grid-template-columns: 1fr 1fr; }
+    .tarjeta.principal { grid-column: span 2; grid-row: auto; }
+    .tarjeta.principal .valor { font-size: 3.8rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+</style>
+</head>
+<body>
+<div class="pagina">
+
+  <header>
+    <h1>Mi Invernadero</h1>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div id="conexion" class="estado-conexion off"><span class="punto"></span><span id="conexionTexto">Desconectado</span></div>
+      <button class="tema" id="btnTema" type="button" aria-label="Cambiar tema" title="Cambiar tema">🌙</button>
+    </div>
+    <div class="actualizado" id="actualizado">Esperando datos…</div>
+  </header>
+
+  <div id="aviso" class="aviso">No estamos recibiendo datos del invernadero. Revisa que esté encendido y con WiFi. Mientras tanto, los controles están bloqueados.</div>
+
+  <!-- DATOS EN VIVO -->
+  <section aria-label="Estado del invernadero">
+    <div class="panel-datos">
+      <div class="tarjeta principal">
+        <div>
+          <div class="nombre">Temperatura</div>
+          <div class="valor"><span id="vTemp">--</span><small>°C</small></div>
+        </div>
+        <div>
+          <span class="etiqueta" id="eTemp">Sin lectura</span>
+          <div class="detalle" id="dTemp" style="color:#a9cdb9"></div>
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <div class="nombre">Agua en la Tierra</div>
+        <div class="valor"><span id="vSuelo">--</span><small>%</small></div>
+        <span class="etiqueta" id="eSuelo">Sin lectura</span>
+      </div>
+
+      <div class="tarjeta">
+        <div class="nombre">Luz de Crecimiento</div>
+        <div class="valor"><span id="vLuz">--</span><small>%</small></div>
+        <span class="etiqueta" id="eLuz">Sin lectura</span>
+        <div class="detalle" id="dLuz"></div>
+      </div>
+
+      <div class="tarjeta">
+        <div class="nombre">Bomba de Agua</div>
+        <div class="valor" style="font-size:1.6rem"><span id="vBomba">--</span></div>
+        <span class="etiqueta" id="eBomba">Sin lectura</span>
+        <div class="detalle" id="dBomba"></div>
+      </div>
+
+      <div class="tarjeta">
+        <div class="nombre">Ventilación / Ventana</div>
+        <div class="valor" style="font-size:1.6rem"><span id="vVentana">--</span></div>
+        <span class="etiqueta" id="eVentana">Sin lectura</span>
+        <div class="detalle" id="dVentana"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANTA -->
+  <section aria-label="Tipo de planta">
+    <div class="caja">
+      <h2>¿Qué estás cultivando?</h2>
+      <p class="sub">Al elegir tu planta, el invernadero ajusta solo el calor, el riego y la ventana.</p>
+      <div class="fila-planta">
+        <select id="selPlanta" aria-label="Elegir planta"></select>
+        <button class="btn suave" id="pNueva" type="button">➕ Nueva planta</button>
+        <button class="btn suave" id="pEditar" type="button">✏️ Editar</button>
+        <button class="btn parar" id="pBorrar" type="button">🗑 Eliminar</button>
+        <span class="etiqueta" id="plantaActiva" style="display:none"></span>
+      </div>
+      <p class="desc-planta" id="descPlanta">Elige una planta para ver cómo la cuidará el invernadero.</p>
+      <div id="formPlanta" class="formplanta" hidden>
+        <h3 id="pfTitulo">Nueva planta</h3>
+        <div class="pf-grid">
+          <label class="ancho">Nombre de la planta<input type="text" id="pfNombre" maxlength="30"></label>
+          <label>Temperatura ideal: mínima (°C)<input type="number" id="pfTMin" step="0.5"></label>
+          <label>Temperatura ideal: máxima (°C)<input type="number" id="pfTMax" step="0.5"></label>
+          <label>Abrir la ventana si pasa de (°C)<input type="number" id="pfAbre" step="0.5"></label>
+          <label>Cerrar la ventana si baja de (°C)<input type="number" id="pfCierra" step="0.5"></label>
+          <label>Agua en la tierra ideal: mínima (%)<input type="number" id="pfSMin" min="0" max="100"></label>
+          <label>Agua en la tierra ideal: máxima (%)<input type="number" id="pfSMax" min="0" max="100"></label>
+          <label>Regar si la tierra baja de (%)<input type="number" id="pfRiega" min="0" max="100"></label>
+          <label>Cuánto regar (segundos)<input type="number" id="pfSeg" min="1" max="600"></label>
+          <label class="ancho">Nota (opcional)<input type="text" id="pfFrase" maxlength="120"></label>
+        </div>
+        <p class="nota" id="pfError" style="color:var(--error);font-weight:700"></p>
+        <div class="fila"><button class="btn" id="pfGuardar" type="button">Guardar y usar</button><button class="btn suave" id="pfCancelar" type="button">Cancelar</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTROL MANUAL -->
+  <section aria-label="Control manual">
+    <h2>Control Manual</h2>
+    <p class="sub">Úsalo cuando quieras dar una orden por tu cuenta. Cuando termina el tiempo, el invernadero vuelve a cuidarse solo.</p>
+    <div class="bloques">
+
+      <div class="bloque riego">
+        <h3>Riego</h3>
+        <div class="fila">
+          <span class="nota" style="margin-right:4px">Segundos:</span>
+          <button class="chip" data-riego="5">5 s</button>
+          <button class="chip" data-riego="10">10 s</button>
+          <button class="chip" data-riego="30">30 s</button>
+        </div>
+        <div class="fila">
+          <label for="riegoSeg">O escribe:</label>
+          <input type="number" id="riegoSeg" min="1" max="300" value="10"> <span class="nota">segundos</span>
+        </div>
+        <div class="fila">
+          <button class="btn agua" id="btnRegar">Regar</button>
+          <button class="btn parar" id="btnPararRiego">Parar</button>
+        </div>
+        <div class="estado-bloque" id="sRiego">Riego automático</div>
+      </div>
+
+      <div class="bloque ventana">
+        <h3>Ventilación (Ventana)</h3>
+        <div class="fila">
+          <label for="ventTiempo">Abrir por:</label>
+          <input type="number" id="ventTiempo" min="1" max="1440" value="60">
+          <select id="ventUnidad" aria-label="Unidad de tiempo">
+            <option value="1">segundos</option>
+            <option value="60">minutos</option>
+          </select>
+        </div>
+        <div class="fila">
+          <button class="btn" id="btnAbrirTiempo">Abrir por tiempo</button>
+          <button class="btn suave" id="btnAbrirSiempre">Abrir y dejar abierta</button>
+        </div>
+        <div class="fila">
+          <button class="btn suave" id="btnCerrar">Cerrar</button>
+          <button class="btn" id="btnVentAuto">Dejar en Automático</button>
+        </div>
+        <p class="nota">“Cerrar” y “Abrir y dejar abierta” se mantienen hasta que pulses “Dejar en Automático”.</p>
+        <div class="estado-bloque" id="sVentana">Ventana automática</div>
+      </div>
+
+      <div class="bloque luz">
+        <h3>Luz de Crecimiento</h3>
+        <div>
+          <label for="luzInt" style="font-weight:700;font-size:.92rem">Qué tan fuerte: <span id="luzIntTxt">100</span>%</label>
+          <input type="range" id="luzInt" min="10" max="100" step="10" value="100">
+        </div>
+        <div class="fila">
+          <label for="luzTiempo">Encender por:</label>
+          <input type="number" id="luzTiempo" min="1" max="1440" value="2">
+          <select id="luzUnidad" aria-label="Unidad de tiempo">
+            <option value="1">segundos</option>
+            <option value="60" selected>minutos</option>
+          </select>
+        </div>
+        <div class="fila">
+          <button class="btn sol" id="btnLuzTiempo">Encender por tiempo</button>
+          <button class="btn suave" id="btnLuzSiempre">Encendida siempre</button>
+        </div>
+        <button class="btn" id="btnLuzAuto">Volver a Automático</button>
+        <div class="estado-bloque" id="sLuz">Luz automática</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- GRÁFICO -->
+  <section aria-label="Evolución de tu cultivo">
+    <div class="caja">
+      <h2>Evolución de tu Cultivo</h2>
+      <p class="sub">Lo que ha pasado mientras tienes esta página abierta. La zona verde es lo ideal para tu planta.</p>
+      <div class="pestanas" id="pestanas">
+        <button class="pestana" data-tab="temperatura" aria-pressed="true">Temperatura</button>
+        <button class="pestana" data-tab="suelo" aria-pressed="false">Agua en la Tierra</button>
+        <button class="pestana" data-tab="luz" aria-pressed="false">Luz de Crecimiento</button>
+        <button class="limpiar" id="btnLimpiar">Limpiar gráfico</button>
+      </div>
+      <div class="lienzo"><canvas id="grafico" aria-label="Gráfico de evolución"></canvas></div>
+      <p class="vacio" id="graficoVacio">Cuando lleguen los primeros datos, aquí verás cómo cambian.</p>
+    </div>
+  </section>
+
+  <section aria-label="Historial de acciones">
+    <div class="caja">
+      <div class="cab-tabla"><h2>Historial de acciones</h2><button class="borrar" id="btnBorrarHist">Borrar historial</button></div>
+      <p class="sub">Lo que hizo el invernadero solo y lo que ordenaste tú. Se guarda en este navegador.</p>
+      <div class="tabla-scroll"><table>
+        <thead><tr><th>Fecha</th><th>Quién</th><th>Equipo</th><th>Qué pasó</th></tr></thead>
+        <tbody id="tbAcciones"></tbody></table></div>
+    </div>
+  </section>
+
+  <section aria-label="Reportes y eventos">
+    <div class="caja">
+      <div class="cab-tabla"><h2>Reportes y eventos</h2>
+        <select id="filtroEv" aria-label="Filtrar eventos"><option value="">Todos</option><option value="info">info</option><option value="alerta">alerta</option><option value="critico">crítico</option></select></div>
+      <div class="tabla-scroll"><table>
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Sensor / Actuador</th><th>Detalle</th><th>Valor</th></tr></thead>
+        <tbody id="tbEventos"></tbody></table></div>
+    </div>
+  </section>
+
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
+<script>window.mqtt || document.write('<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"><\/script>')</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(() => {
+  // ---------- Conexión ----------
+  const BROKER_WSS = 'wss://broker.hivemq.com:8884/mqtt';
+  const T_TELE = 'rodrigo_utec/sensores/telemetria';
+  const T_PLANTA = 'rodrigo_utec/control/planta';
+  const T_CMD = 'rodrigo_utec/control/comandos';
+  const SIN_DATOS_MS = 7000;   // si pasan más de 7 s sin recibir datos -> "Desconectado"
+  const MAX_REGISTROS = 30;
+
+  // ---------- Perfiles de planta ----------
+  // Plantas de ejemplo. Puedes crear, editar y borrar plantas desde la app.
+  const PERFILES_BASE = {
+    rabanito: { nombre: 'Rabanito', abre: 25, cierra: 22, riegaBajo: 35, seg: 12,
+      frase: 'Le gusta el fresquito y la tierra bien húmeda.',
+      ideal: { temperatura: [18, 22], suelo: [60, 70] } },
+    lechuga: { nombre: 'Lechuga', abre: 24, cierra: 20, riegaBajo: 40, seg: 12,
+      frase: 'Prefiere el frío suave y no soporta que la tierra se seque.',
+      ideal: { temperatura: [15, 20], suelo: [60, 70] } },
+    tomate: { nombre: 'Tomate', abre: 28, cierra: 24, riegaBajo: 40, seg: 15,
+      frase: 'Disfruta del calor y necesita bastante agua.',
+      ideal: { temperatura: [21, 26], suelo: [60, 70] } },
+    cactus: { nombre: 'Cactus', abre: 32, cierra: 28, riegaBajo: 10, seg: 5,
+      frase: 'Aguanta el calor y la sequía; poca agua es mejor.',
+      ideal: { temperatura: [20, 30], suelo: [10, 30] } }
+  };
+
+  let PERFILES = PERFILES_BASE;
+  try { const g = JSON.parse(localStorage.getItem('inv_perfiles')); if (g && Object.keys(g).length) PERFILES = g; } catch (e) {}
+  const guardarPerfiles = () => { try { localStorage.setItem('inv_perfiles', JSON.stringify(PERFILES)); } catch (e) {} };
+
+  const TABS = {
+    temperatura: { titulo: 'Temperatura', unidad: '°C', color: '#c4561a', rango: true },
+    suelo:       { titulo: 'Agua en la Tierra', unidad: '%', color: '#1f6f78', rango: true, pct: true },
+    luz:         { titulo: 'Luz de Crecimiento', unidad: '%', color: '#c98a00', rango: false, pct: true }
+  };
+
+  const $ = id => document.getElementById(id);
+  let mqttOk = false, ultimoMsg = 0, ultimo = null, plantaPendienteHasta = 0;
+  let plantaActiva = null, tabActual = 'temperatura';
+  const historial = [];
+
+  // ---------- MQTT ----------
+  // Prueba primero wss:8884 (seguro); si falla 3 veces y la página no es https, prueba ws:8000
+  const URLS = [BROKER_WSS].concat(location.protocol === 'https:' ? [] : ['ws://broker.hivemq.com:8000/mqtt']);
+  let client = null, urlIdx = 0, fallos = 0, ultimoError = '';
+  const fallaLib = (typeof mqtt === 'undefined');
+
+  function conectar() {
+    if (fallaLib) return;
+    if (client) client.end(true);
+    mqttOk = false; fallos = 0;
+    const c = client = mqtt.connect(URLS[urlIdx], {
+      clientId: 'web_invernadero_' + Math.random().toString(16).slice(2, 10),
+      reconnectPeriod: 3000, connectTimeout: 8000, clean: true
+    });
+    c.on('connect', () => { if (c !== client) return; mqttOk = true; fallos = 0; ultimoError = ''; c.subscribe(T_TELE); pintar(); });
+    c.on('close', () => {
+      if (c !== client) return;
+      mqttOk = false; fallos++;
+      if (fallos >= 3 && URLS.length > 1) { urlIdx = (urlIdx + 1) % URLS.length; conectar(); }
+      pintar();
+    });
+    c.on('error', e => { if (c === client) { ultimoError = (e && e.message) || String(e); pintar(); } });
+    c.on('message', (topic, payload) => {
+      if (c !== client || topic !== T_TELE) return;
+      let d;
+      try { d = JSON.parse(payload.toString()); } catch (e) { return; }
+      recibir(d);
+    });
+  }
+
+  const enLinea = () => mqttOk && ultimo && (Date.now() - ultimoMsg < SIN_DATOS_MS);
+
+  const ordenes = {};
+  const EQUIPO = { riego: 'Bomba de agua', ventilacion: 'Ventana', luz: 'Luz de crecimiento' };
+  function enviar(obj, mensaje) {
+    if (!(client && client.connected)) { avisar('Sin conexión a internet'); return; }
+    client.publish(T_CMD, JSON.stringify(obj));   // sin "retain": una orden vieja nunca se repite sola
+    avisar(mensaje || 'Orden enviada');
+    ordenes[obj.dispositivo] = Date.now();
+    accion('Tú', EQUIPO[obj.dispositivo], mensaje || 'Orden enviada');
+  }
+
+  // ---------- Utilidades ----------
+  let tToast;
+  function avisar(txt) {
+    const t = $('toast'); t.textContent = txt; t.classList.add('visible');
+    clearTimeout(tToast); tToast = setTimeout(() => t.classList.remove('visible'), 2200);
+  }
+  const pad = n => String(n).padStart(2, '0');
+  const hora = d => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  function tiempo(s) { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)} min ${s % 60} s` : `${s} s`; }
+  const num = (id, min, max, def) => {
+    const v = parseInt($(id).value, 10);
+    return Math.min(max, Math.max(min, isNaN(v) ? def : v));
+  };
+
+  function juzgar(v, r, bajo, alto) {
+    if (v === null || v === undefined) return ['Sin lectura', ''];
+    if (!r) return ['', ''];
+    if (v < r[0]) return [bajo, 'warn'];
+    if (v > r[1]) return [alto, 'warn'];
+    return ['Ideal', 'ok'];
+  }
+  function poner(idEtiqueta, [txt, cls]) {
+    const e = $(idEtiqueta); e.textContent = txt; e.className = 'etiqueta' + (cls ? ' ' + cls : '');
+    e.style.display = txt ? '' : 'none';
+  }
+
+  // ---------- Pintar pantalla ----------
+  function pintar() {
+    const online = enLinea();
+    $('conexion').classList.toggle('off', !online);
+    $('conexionTexto').textContent = online ? 'Conectado' : 'Desconectado';
+    const av = $('aviso'); av.classList.toggle('visible', !online);
+    av.textContent = fallaLib ? 'No se pudo cargar la librería de conexión. Revisa tu internet y recarga la página.'
+      : !mqttOk ? 'Sin conexión con el servidor de mensajes (HiveMQ). Revisa tu internet o prueba con otra red.' + (ultimoError ? ' Detalle: ' + ultimoError : '')
+      : 'Tu internet y el servidor funcionan, pero el invernadero no está enviando datos. Revisa que el ESP32 esté encendido, con WiFi y con los mismos nombres de tópico.';
+    $('actualizado').textContent = ultimo ? 'Última actualización: ' + hora(new Date(ultimoMsg)) : 'Esperando datos…';
+
+    // Controles manuales solo con el invernadero conectado; el selector de planta basta con internet
+    document.querySelectorAll('.bloques button, .bloques input, .bloques select').forEach(el => el.disabled = !online);
+    $('selPlanta').disabled = !mqttOk;
+
+    const d = ultimo; if (!d) return;
+    const p = PERFILES[plantaActiva] ? PERFILES[plantaActiva].ideal : null;
+    const v = (x, dec) => (x === null || x === undefined) ? '--' : Number(x).toFixed(dec);
+
+    $('vTemp').textContent = v(d.temperatura, 1);
+    poner('eTemp', juzgar(d.temperatura, p && p.temperatura, 'Algo fría', 'Algo caliente'));
+    $('dTemp').textContent = p ? `Ideal para ${PERFILES[plantaActiva].nombre.toLowerCase()}: ${p.temperatura[0]} a ${p.temperatura[1]} °C` : '';
+
+    $('vSuelo').textContent = v(d.suelo, 0);
+    poner('eSuelo', juzgar(d.suelo, p && p.suelo, 'Tierra seca', 'Tierra muy mojada'));
+
+    $('vLuz').textContent = v(d.luz, 0);
+    poner('eLuz', [d.luz > 0 ? 'Encendida' : 'Apagada', d.luz > 0 ? 'ok' : '']);
+    $('dLuz').textContent = d.modoLuz === 'AUTO' ? 'Modo automático' : 'Modo manual';
+
+    $('vBomba').textContent = d.regando ? 'Regando' : 'En reposo';
+    poner('eBomba', [d.modoRiego === 'MANUAL' ? 'Manual' : 'Automático', d.regando ? 'ok' : '']);
+    $('dBomba').textContent = d.regando ? `Quedan ${tiempo(d.restoRiego)}` : '';
+
+    $('vVentana').textContent = d.ventana === 'abierta' ? 'Abierta' : 'Cerrada';
+    poner('eVentana', [d.modoVentana === 'MANUAL' ? 'Manual' : 'Automático', '']);
+    $('dVentana').textContent = d.modoVentana === 'MANUAL' && d.restoVentana > 0 ? `Vuelve a automático en ${tiempo(d.restoVentana)}` : '';
+
+    // Estado dentro de cada bloque de control
+    estadoBloque('sRiego', d.regando,
+      d.regando ? `Regando… quedan ${tiempo(d.restoRiego)}` : 'Riego automático');
+    estadoBloque('sVentana', d.modoVentana === 'MANUAL',
+      d.modoVentana !== 'MANUAL' ? 'Ventana automática'
+        : (d.restoVentana > 0 ? `Orden manual: vuelve a automático en ${tiempo(d.restoVentana)}`
+                              : 'Orden manual hasta que la dejes en automático'));
+    estadoBloque('sLuz', d.modoLuz !== 'AUTO',
+      d.modoLuz === 'AUTO' ? 'Luz automática'
+        : d.modoLuz === 'TEMPORIZADO' ? `Encendida al ${d.luz}%: quedan ${tiempo(d.restoLuz)}`
+        : `Encendida al ${d.luz}% hasta que la dejes en automático`);
+
+    if (PERFILES[plantaActiva]) {
+      const e = $('plantaActiva'); e.style.display = ''; e.className = 'etiqueta ok';
+      e.textContent = 'En uso: ' + PERFILES[plantaActiva].nombre;
+    }
+  }
+  function estadoBloque(id, activo, txt) {
+    const e = $(id); e.textContent = txt; e.className = 'estado-bloque' + (activo ? ' activo' : '');
+  }
+
+  // ---------- Planta ----------
+  function describir(clave) {
+    const p = PERFILES[clave];
+    if (!p) return 'Elige una planta para ver cómo la cuidará el invernadero.';
+    return `${p.frase ? p.frase + ' ' : ''}Abre la ventana cuando pasa de ${p.abre} °C y la cierra al bajar de ${p.cierra} °C. ` +
+           `Riega unos ${p.seg} segundos cuando la tierra tiene menos de ${p.riegaBajo}% de agua.`;
+  }
+  $('selPlanta').addEventListener('change', e => usarPlanta(e.target.value));
+  $('selPlanta').addEventListener('focus', () => { plantaPendienteHasta = Date.now() + 6000; });
+
+  // ---------- Controles manuales ----------
+  document.querySelectorAll('[data-riego]').forEach(b =>
+    b.addEventListener('click', () => { $('riegoSeg').value = b.dataset.riego; }));
+  $('btnRegar').addEventListener('click', () => {
+    const s = num('riegoSeg', 1, 300, 10);
+    enviar({ dispositivo: 'riego', accion: 'ON', segundos: s }, `Regando ${s} segundos`);
+  });
+  $('btnPararRiego').addEventListener('click', () =>
+    enviar({ dispositivo: 'riego', accion: 'OFF' }, 'Riego detenido'));
+
+  const segVent = () => num('ventTiempo', 1, 1440, 1) * parseInt($('ventUnidad').value, 10);
+  $('btnAbrirTiempo').addEventListener('click', () =>
+    enviar({ dispositivo: 'ventilacion', accion: 'ABRIR', segundos: segVent() }, 'Abriendo la ventana'));
+  $('btnAbrirSiempre').addEventListener('click', () =>
+    enviar({ dispositivo: 'ventilacion', accion: 'ABRIR', segundos: 0 }, 'Abriendo la ventana'));
+  $('btnCerrar').addEventListener('click', () =>
+    enviar({ dispositivo: 'ventilacion', accion: 'CERRAR', segundos: 0 }, 'Cerrando la ventana'));
+  $('btnVentAuto').addEventListener('click', () =>
+    enviar({ dispositivo: 'ventilacion', accion: 'AUTO' }, 'Ventana en automático'));
+
+  $('luzInt').addEventListener('input', e => { $('luzIntTxt').textContent = e.target.value; });
+  const segLuz = () => num('luzTiempo', 1, 1440, 1) * parseInt($('luzUnidad').value, 10);
+  $('btnLuzTiempo').addEventListener('click', () =>
+    enviar({ dispositivo: 'luz', modo: 'TEMPORIZADO', intensidad: parseInt($('luzInt').value, 10), segundos: segLuz() }, 'Luz encendida por tiempo'));
+  $('btnLuzSiempre').addEventListener('click', () =>
+    enviar({ dispositivo: 'luz', modo: 'FIJO', intensidad: parseInt($('luzInt').value, 10) }, 'Luz encendida sin límite'));
+  $('btnLuzAuto').addEventListener('click', () =>
+    enviar({ dispositivo: 'luz', modo: 'AUTO' }, 'Luz en automático'));
+
+  // ---------- Gráfico ----------
+  function agregarRegistro(d) {
+    historial.push({ t: hora(new Date()), temperatura: d.temperatura, suelo: d.suelo, luz: d.luz });
+    while (historial.length > MAX_REGISTROS) historial.shift();
+  }
+
+  const grafico = new Chart($('grafico'), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'Valor', data: [], borderColor: '#c4561a', backgroundColor: '#c4561a', tension: 0.3, pointRadius: 3, borderWidth: 2.5, order: 0 },
+        { label: 'Mínimo ideal', data: [], borderWidth: 0, pointRadius: 0, fill: false, order: 2 },
+        { label: 'Máximo ideal', data: [], borderWidth: 0, pointRadius: 0, fill: '-1', backgroundColor: 'rgba(47,125,79,.16)', order: 2 }
+      ]
+    },
+    options: {
+      animation: false,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { filter: i => i.datasetIndex === 0 } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 6, color: '#4b6b64' }, grid: { display: false } },
+        y: { title: { display: true, text: '' }, ticks: { color: '#4b6b64' }, grid: { color: '#e3ebe6' } }
+      }
+    }
+  });
+
+  function actualizarGrafico() {
+    const cfg = TABS[tabActual];
+    const perfil = PERFILES[plantaActiva];
+    const rango = (cfg.rango && perfil) ? perfil.ideal[tabActual] : null;
+
+    grafico.data.labels = historial.map(h => h.t);
+    grafico.data.datasets[0].data = historial.map(h => h[tabActual]);
+    grafico.data.datasets[0].borderColor = cfg.color;
+    grafico.data.datasets[0].backgroundColor = cfg.color;
+    grafico.data.datasets[1].data = rango ? historial.map(() => rango[0]) : [];
+    grafico.data.datasets[2].data = rango ? historial.map(() => rango[1]) : [];
+
+    const y = grafico.options.scales.y;
+    y.title.text = `${cfg.titulo} (${cfg.unidad})`;
+    if (cfg.pct) { y.min = 0; y.max = 100; y.suggestedMin = undefined; y.suggestedMax = undefined; }
+    else {
+      y.min = undefined; y.max = undefined;
+      y.suggestedMin = rango ? rango[0] - 4 : 10;
+      y.suggestedMax = rango ? rango[1] + 4 : 35;
+    }
+    grafico.update('none');
+    $('graficoVacio').style.display = historial.length ? 'none' : '';
+  }
+
+  $('pestanas').addEventListener('click', e => {
+    const b = e.target.closest('.pestana'); if (!b) return;
+    tabActual = b.dataset.tab;
+    document.querySelectorAll('.pestana').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    actualizarGrafico();
+  });
+  $('btnLimpiar').addEventListener('click', () => {
+    historial.length = 0; actualizarGrafico(); avisar('Gráfico limpio');
+  });
+
+  // Revisa cada segundo si el invernadero dejó de responder
+  // ---------- Historial de acciones y eventos (se guardan en este navegador) ----------
+  let acciones = [], eventos = [];
+  try { acciones = JSON.parse(localStorage.getItem('inv_acciones') || '[]'); eventos = JSON.parse(localStorage.getItem('inv_eventos') || '[]'); } catch (e) {}
+  const guardar = () => { try { localStorage.setItem('inv_acciones', JSON.stringify(acciones)); localStorage.setItem('inv_eventos', JSON.stringify(eventos)); } catch (e) {} };
+  const fechaCorta = ms => { const d = new Date(ms); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function accion(quien, equipo, texto) { acciones.unshift({ t: Date.now(), quien, equipo, texto }); acciones.length = Math.min(acciones.length, 200); guardar(); tablas(); }
+  function evento(tipo, equipo, detalle, valor) { eventos.unshift({ t: Date.now(), tipo, equipo, detalle, valor: valor || '—' }); eventos.length = Math.min(eventos.length, 200); guardar(); tablas(); }
+  function tablas() {
+    $('tbAcciones').innerHTML = acciones.length
+      ? acciones.map(a => `<tr><td>${fechaCorta(a.t)}</td><td>${esc(a.quien)}</td><td>${esc(a.equipo)}</td><td>${esc(a.texto)}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="vacio-t">Todavía no hay acciones.</td></tr>';
+    const f = $('filtroEv').value, ev = eventos.filter(e => !f || e.tipo === f);
+    $('tbEventos').innerHTML = ev.length
+      ? ev.map(e => `<tr><td>${fechaCorta(e.t)}</td><td><span class="tipo ${e.tipo}">${e.tipo === 'critico' ? 'crítico' : e.tipo}</span></td><td>${esc(e.equipo)}</td><td>${esc(e.detalle)}</td><td>${esc(e.valor)}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="vacio-t">Sin eventos.</td></tr>';
+  }
+  $('filtroEv').addEventListener('change', tablas);
+  $('btnBorrarHist').addEventListener('click', () => { acciones = []; eventos = []; guardar(); tablas(); avisar('Historial borrado'); });
+
+  // Detecta cambios entre una lectura y la anterior
+  const alertaActiva = {};
+  function alertar(clave, activa, tipo, equipo, detalle, valor) {
+    if (activa && !alertaActiva[clave]) evento(tipo, equipo, detalle, valor);
+    alertaActiva[clave] = activa;
+  }
+  const reciente = dev => Date.now() - (ordenes[dev] || 0) < 5000;   // evita duplicar lo que acabas de ordenar
+  function analizar(d, p) {
+    const ideal = PERFILES[d.planta] ? PERFILES[d.planta].ideal : null;
+    if (p) {
+      if (p.regando !== d.regando) {
+        if (d.regando && d.modoRiego === 'AUTO') { accion('Automático', 'Bomba de agua', 'Riego encendido (tierra seca)'); evento('info', 'Riego', 'Riego automático activado (tierra seca)', d.suelo + ' %'); }
+        else if (!d.regando) { accion('Automático', 'Bomba de agua', 'Riego terminado'); evento('info', 'Riego', 'Riego terminado', d.suelo + ' %'); }
+      }
+      if (p.ventana !== d.ventana && d.modoVentana === 'AUTO') {
+        const ab = d.ventana === 'abierta';
+        accion('Automático', 'Ventana', ab ? 'Ventana abierta (hace calor)' : 'Ventana cerrada (bajó la temperatura)');
+        evento('info', 'Ventana', ab ? 'Ventana abierta por temperatura alta' : 'Ventana cerrada', d.temperatura == null ? '—' : d.temperatura + ' °C');
+      }
+      if (p.modoVentana !== d.modoVentana && d.modoVentana === 'AUTO' && !reciente('ventilacion'))
+        accion('Automático', 'Ventana', 'Terminó el tiempo manual: vuelve a automático');
+      if (p.modoLuz !== d.modoLuz && d.modoLuz === 'AUTO' && !reciente('luz'))
+        accion('Automático', 'Luz de crecimiento', 'Terminó el tiempo manual: vuelve a automático');
+      if (d.modoLuz === 'AUTO' && p.modoLuz === 'AUTO' && (p.luz > 0) !== (d.luz > 0)) {
+        accion('Automático', 'Luz de crecimiento', d.luz > 0 ? 'Luz encendida (poca luz natural)' : 'Luz apagada (hay suficiente luz)');
+        evento('info', 'Luz', d.luz > 0 ? 'Luz de crecimiento encendida' : 'Luz de crecimiento apagada', d.luz + ' %');
+      }
+    }
+    alertar('tempNull', d.temperatura == null, 'critico', 'Sensor temperatura', 'Sin lectura del sensor (revisa la conexión)', '—');
+    alertar('suelo0', d.suelo === 0, 'critico', 'Sensor suelo', 'Lectura en 0 % (posible desconexión)', '0 %');
+    if (ideal && d.temperatura != null) {
+      alertar('tAlta', d.temperatura > ideal.temperatura[1], 'alerta', 'Temperatura', 'Temperatura por encima del rango ideal', d.temperatura + ' °C');
+      alertar('tBaja', d.temperatura < ideal.temperatura[0], 'alerta', 'Temperatura', 'Temperatura por debajo del rango ideal', d.temperatura + ' °C');
+    }
+    if (ideal && d.suelo > 0) {
+      alertar('sBajo', d.suelo < ideal.suelo[0], 'alerta', 'Agua en la tierra', 'Tierra por debajo del rango ideal', d.suelo + ' %');
+      alertar('sAlto', d.suelo > ideal.suelo[1], 'alerta', 'Agua en la tierra', 'Tierra por encima del rango ideal', d.suelo + ' %');
+    }
+  }
+  let eraOnline = false;
+  function vigilar() {
+    const o = !!enLinea();
+    if (o !== eraOnline) { evento(o ? 'info' : 'alerta', 'Sistema', o ? 'Invernadero conectado' : 'El invernadero dejó de enviar datos', o ? 'OK' : '—'); eraOnline = o; }
+  }
+
+  // ---------- Recibir datos (del ESP32) ----------
+  function recibir(d) {
+    const prev = ultimo; ultimo = d; ultimoMsg = Date.now();
+    if (d.planta && PERFILES[d.planta]) {
+      plantaActiva = d.planta;
+      if (Date.now() > plantaPendienteHasta) $('selPlanta').value = d.planta;
+    }
+    agregarRegistro(d); analizar(d, prev); pintar(); actualizarGrafico();
+  }
+
+  // ---------- Plantas: elegir, crear, editar y borrar ----------
+  function usarPlanta(clave) {
+    const p = PERFILES[clave]; if (!p) return;
+    if (!(client && client.connected)) { avisar('Sin conexión a internet'); return; }
+    plantaPendienteHasta = Date.now() + 6000; plantaActiva = clave;
+    $('descPlanta').textContent = describir(clave);
+    client.publish(T_PLANTA, JSON.stringify({ nombre: clave, tempAbrir: p.abre, tempCerrar: p.cierra, sueloUmbral: p.riegaBajo, riegoSeg: p.seg }), { retain: true });
+    avisar('Planta: ' + p.nombre); accion('Tú', 'Planta', 'Cambió a ' + p.nombre);
+    actualizarGrafico(); pintar();
+  }
+  function llenarSelect(sel) {
+    const s = $('selPlanta');
+    s.innerHTML = '<option value="" disabled>Elige una planta…</option>' + Object.keys(PERFILES).map(k => `<option value="${esc(k)}">${esc(PERFILES[k].nombre)}</option>`).join('');
+    s.value = PERFILES[sel] ? sel : (PERFILES[plantaActiva] ? plantaActiva : '');
+    $('descPlanta').textContent = describir(s.value);
+  }
+  const slug = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'planta';
+  const CAMPOS = ['pfNombre', 'pfTMin', 'pfTMax', 'pfAbre', 'pfCierra', 'pfSMin', 'pfSMax', 'pfRiega', 'pfSeg', 'pfFrase'];
+  let editando = '';
+  function abrirForm(clave) {
+    editando = clave || '';
+    const p = clave ? PERFILES[clave] : { nombre: '', abre: 26, cierra: 22, riegaBajo: 35, seg: 10, frase: '', ideal: { temperatura: [18, 24], suelo: [60, 70] } };
+    const v = [p.nombre, p.ideal.temperatura[0], p.ideal.temperatura[1], p.abre, p.cierra, p.ideal.suelo[0], p.ideal.suelo[1], p.riegaBajo, p.seg, p.frase || ''];
+    CAMPOS.forEach((id, i) => { $(id).value = v[i]; });
+    $('pfTitulo').textContent = clave ? 'Editar ' + p.nombre : 'Nueva planta';
+    $('pfError').textContent = ''; $('formPlanta').hidden = false; $('pfNombre').focus();
+  }
+  function guardarPlanta() {
+    const n = $('pfNombre').value.trim(), v = id => parseFloat($(id).value);
+    const p = { nombre: n, abre: v('pfAbre'), cierra: v('pfCierra'), riegaBajo: v('pfRiega'), seg: v('pfSeg'), frase: $('pfFrase').value.trim(),
+      ideal: { temperatura: [v('pfTMin'), v('pfTMax')], suelo: [v('pfSMin'), v('pfSMax')] } };
+    const nums = [p.abre, p.cierra, p.riegaBajo, p.seg, ...p.ideal.temperatura, ...p.ideal.suelo];
+    const clave = editando || slug(n);
+    let err = '';
+    if (!n) err = 'Escribe el nombre de la planta.';
+    else if (!editando && PERFILES[clave]) err = 'Ya existe una planta con ese nombre.';
+    else if (nums.some(isNaN)) err = 'Completa todos los números.';
+    else if (p.cierra >= p.abre) err = 'La temperatura para cerrar debe ser menor que la de abrir.';
+    else if (p.ideal.temperatura[0] >= p.ideal.temperatura[1] || p.ideal.suelo[0] >= p.ideal.suelo[1]) err = 'En cada rango, el mínimo debe ser menor que el máximo.';
+    else if ([p.riegaBajo, ...p.ideal.suelo].some(x => x < 0 || x > 100)) err = 'El agua en la tierra va de 0 a 100 %.';
+    else if (p.seg < 1 || p.seg > 600) err = 'El riego debe durar entre 1 y 600 segundos.';
+    if (err) { $('pfError').textContent = err; return; }
+    PERFILES[clave] = p; guardarPerfiles();
+    $('formPlanta').hidden = true; llenarSelect(clave); usarPlanta(clave);
+  }
+  $('pNueva').addEventListener('click', () => abrirForm(''));
+  $('pEditar').addEventListener('click', () => { const k = $('selPlanta').value; PERFILES[k] ? abrirForm(k) : avisar('Primero elige una planta'); });
+  $('pBorrar').addEventListener('click', () => {
+    const k = $('selPlanta').value; if (!PERFILES[k]) { avisar('Primero elige una planta'); return; }
+    if (!confirm('¿Eliminar la planta ' + PERFILES[k].nombre + '?')) return;
+    delete PERFILES[k]; guardarPerfiles();
+    if (plantaActiva === k) { plantaActiva = null; }
+    llenarSelect(''); avisar('Planta eliminada'); actualizarGrafico(); pintar();
+  });
+  $('pfGuardar').addEventListener('click', guardarPlanta);
+  $('pfCancelar').addEventListener('click', () => { $('formPlanta').hidden = true; });
+
+  // ---------- Tema claro / oscuro ----------
+  function colorGrafico() {
+    const c = getComputedStyle(document.documentElement), s = grafico.options.scales;
+    s.x.ticks.color = s.y.ticks.color = s.y.title.color = c.getPropertyValue('--tinta-suave').trim();
+    s.y.grid.color = c.getPropertyValue('--linea').trim();
+    grafico.update('none');
+  }
+  function tema(t) {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('tema', t); } catch (e) {}
+    $('btnTema').textContent = t === 'dark' ? '☀️' : '🌙';
+    colorGrafico();
+  }
+  let t0 = null; try { t0 = localStorage.getItem('tema'); } catch (e) {}
+  tema(t0 || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  $('btnTema').addEventListener('click', () => tema(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+  setInterval(() => { vigilar(); pintar(); }, 1000);
+  tablas();
+  llenarSelect('');
+  conectar();
+  pintar();
+  actualizarGrafico();
+})();
+</script>
+</body>
+</html>
